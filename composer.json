@@ -1,6 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "mcbankske/mcbankslaravel",
+    "type": "project",
     "version": "1.0.2",
     "description": "Laravel starter with Spatie roles and super admin hierarchy",
     "keywords": ["laravel", "framework"],
