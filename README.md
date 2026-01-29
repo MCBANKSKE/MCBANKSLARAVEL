@@ -23,7 +23,7 @@ A Laravel starter template with role-based authentication, Livewire components, 
 ### Quick Start
 
 ```bash
-composer create-project mcbanks/mcbankslaravel my-project
+composer create-project mcbankske/mcbankslaravel my-project
 cd my-project
 ```
 
@@ -174,7 +174,7 @@ $wards = SubCounty::getWardsByConstituency(1, 'changamwe');
 $allWards = SubCounty::getAllUniqueWards();
 ```
 
-## �🏗️ Authentication System
+## ��️ Authentication System
 
 ### Registration (`RegistrationForm`)
 
@@ -450,6 +450,7 @@ If you encounter any issues:
 
 ## 🔄 Version History
 
+* **v1.0.2** - Added comprehensive geographical data and enhanced SubCounty model
 * **v1.0.1** - Updated documentation and GitHub repository links
 * **v1.0.0** - Initial release with Laravel 12, Livewire 4.1, Spatie Permission
 
