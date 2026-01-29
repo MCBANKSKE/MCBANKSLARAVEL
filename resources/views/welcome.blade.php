@@ -29,6 +29,13 @@
                 <p class="text-xl text-white/90 mb-8">
                     Laravel starter with role-based authentication, geographical data, and modern UI
                 </p>
+                
+                @if(session('status'))
+                    <div class="mb-6 p-4 bg-green-500/20 border border-green-400/30 rounded-lg text-white">
+                        {{ session('status') }}
+                    </div>
+                @endif
+                
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     @guest
                         <a href="{{ route('login') }}" class="px-8 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
@@ -38,8 +45,8 @@
                             Register
                         </a>
                     @else
-                        <a href="/dashboard" class="px-8 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                            Dashboard
+                        <a href="{{ route('login') }}" class="px-8 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                            Login
                         </a>
                     @endguest
                 </div>

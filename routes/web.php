@@ -57,7 +57,12 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
         $request->fulfill();
-        return redirect('/profile')->with('verified', true);
+        
+        // Send welcome email after successful verification
+        $emailService = new \App\Services\EmailService();
+        $emailService->sendWelcomeEmail($request->user());
+        
+        return redirect('/')->with('verified', true)->with('status', 'Welcome! Your email has been verified successfully.');
     })->middleware('signed')->name('verification.verify');
     
     Route::post('/email/verification-notification', function (Request $request) {

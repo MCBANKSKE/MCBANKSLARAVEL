@@ -9,6 +9,7 @@ use App\Models\User;
 //use App\Models\MemberAccount;
 //use App\Models\Country;
 //use App\Models\State;
+use App\Services\EmailService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
