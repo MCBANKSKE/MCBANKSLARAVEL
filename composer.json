@@ -3,8 +3,8 @@
     "name": "mcbankske/mcbankslaravel",
     "type": "project",
     "version": "1.0.2",
-    "description": "Laravel starter with Spatie roles and super admin hierarchy",
-    "keywords": ["laravel", "framework"],
+    "description": "Laravel starter with role-based authentication, geographical data, and modern UI. Includes Spatie roles, Livewire components, Kenyan administrative data, and comprehensive location information.",
+    "keywords": ["laravel", "framework", "authentication", "roles", "permissions", "livewire", "geographical", "kenya", "countries", "states", "cities", "starter", "scaffold"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
