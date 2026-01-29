@@ -2,7 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->configureEmailVerification();
+    }
+
+    /**
+     * Configure email verification middleware.
+     */
+    protected function configureEmailVerification(): void
+    {
+        // Ensure the email verification middleware is applied to all routes
+        $this->app['router']->aliasMiddleware('verified', EnsureEmailIsVerified::class);
     }
 }
