@@ -15,6 +15,8 @@ A Laravel starter template with role-based authentication, Livewire components, 
 * **Modern UI** - Tailwind CSS, Glass Morphism, Gradients
 * **Password Strength Indicator**
 * **Responsive Design**
+* **Geographical Data** - Complete countries, states, cities with currencies
+* **Kenyan Administrative Data** - All 47 counties with constituencies and wards
 
 ## 📦 Installation
 
@@ -102,7 +104,77 @@ composer run test
 php artisan test
 ```
 
-## 🏗️ Authentication System
+## � Geographical Data Included
+
+This package comes with comprehensive geographical data that's automatically seeded during installation:
+
+### 🌐 International Data
+- **Countries** - 250+ countries with complete information:
+  - Name, ISO codes (ISO2, ISO3)
+  - Capital cities, currencies, currency symbols
+  - Phone codes, top-level domains
+  - Regions, subregions, timezones
+  - Latitude/longitude coordinates
+  - Emoji flags and WikiData IDs
+
+- **States/Provinces** - 5,000+ states and provinces worldwide
+  - Linked to countries with proper relationships
+  - ISO codes, FIPS codes, coordinates
+
+- **Cities** - 150,000+ cities globally
+  - Linked to states and countries
+  - Geographic coordinates
+  - Country and state codes
+
+### 🇰🇪 Kenyan Administrative Data
+- **Counties** - All 47 Kenyan counties
+  - Complete county names and relationships
+
+- **Sub-Counties** - Comprehensive administrative structure:
+  - **Constituencies** - 290+ constituencies across all counties
+  - **Wards** - 1,450+ wards nationwide
+  - Proper relationships between counties, constituencies, and wards
+
+### 💰 Currency Information
+- Integrated currency data for all countries
+- Currency symbols and codes included
+- Perfect for financial applications
+
+### 📊 Database Schema
+```sql
+countries          # 250+ countries with full details
+states             # 5,000+ states/provinces
+cities             # 150,000+ cities worldwide
+counties           # 47 Kenyan counties
+sub_counties       # Kenyan constituencies and wards
+```
+
+### 🔧 Usage Examples
+
+```php
+// Get all countries
+$countries = Country::all();
+
+// Get states for a specific country
+$states = State::where('country_id', 1)->get();
+
+// Get cities in a state
+$cities = City::where('state_id', 1)->get();
+
+// Get Kenyan counties
+$counties = County::all();
+
+// Get constituencies in a county
+$constituencies = SubCounty::getUniqueConstituencies(1);
+
+// Get wards in a constituency
+$wards = SubCounty::getWardsByConstituency(1, 'changamwe');
+
+// Get all wards in Kenya (filtered, no duplicates)
+$allWards = SubCounty::getAllUniqueWards();
+```
+
+## �🏗️ Authentication System
 
 ### Registration (`RegistrationForm`)
 
