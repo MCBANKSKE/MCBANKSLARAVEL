@@ -17,6 +17,10 @@ A Laravel starter template with role-based authentication, Livewire components, 
 * **Responsive Design**
 * **Geographical Data** - Complete countries, states, cities with currencies
 * **Kenyan Administrative Data** - All 47 counties with constituencies and wards
+* **User Profiles** - Complete profile management system
+* **Avatar Upload** - Image processing with thumbnails and cropping
+* **Privacy Settings** - Granular privacy controls
+* **Profile Completion** - Progress tracking and indicators
 
 ## 📦 Installation
 
@@ -81,12 +85,12 @@ composer run setup
 ```
 
 This script will:
-
-* Install dependencies
-* Copy `.env.example` to `.env` 
-* Generate app key
-* Run migrations
-* Install and build frontend assets
+* Install PHP dependencies (`composer install`)
+* Copy `.env.example` to `.env` if it doesn't exist
+* Generate application key (`php artisan key:generate`)
+* Run database migrations (`php artisan migrate --force`)
+* Install Node.js dependencies (`npm install`)
+* Build frontend assets (`npm run build`)
 
 ## 🔧 Development
 
@@ -96,6 +100,12 @@ This script will:
 composer run dev
 ```
 
+This command runs multiple services concurrently:
+- **Laravel development server** (PHP artisan serve)
+- **Queue worker** (php artisan queue:listen)
+- **Log viewer** (php artisan pail)
+- **Vite frontend build** (npm run dev)
+
 **Run tests:**
 
 ```bash
@@ -103,6 +113,8 @@ composer run test
 # or
 php artisan test
 ```
+
+The test command clears configuration cache before running tests for consistent results.
 
 ## � Geographical Data Included
 
@@ -219,7 +231,9 @@ $allWards = SubCounty::getAllUniqueWards();
 
 ## 🛠️ Role Setup (Critical)
 
-1. **Create roles before registering users:**
+### 1. Create Roles Before Registering Users
+
+Use the provided Artisan command to create roles:
 
 ```bash
 php artisan role:create admin
@@ -228,22 +242,26 @@ php artisan role:create customer
 php artisan role:create manager
 ```
 
-2. **Super Admin**
+This uses the `CreateRole` console command in `app/Console/Commands/CreateRole.php`.
 
-* `is_super_admin` boolean on `users` table
-* Overrides roles, not a Spatie role
-* Can bypass role restrictions
+### 2. Super Admin Feature
 
-3. **Assign roles manually**
+* `is_super_admin` boolean field on `users` table
+* Overrides role-based permissions (not a Spatie role)
+* Can bypass all role restrictions
+* Set this field manually in the database or via seeder
+
+### 3. Assign Roles Manually
 
 ```php
-$user->assignRole('admin'); // example
+$user = User::find(1);
+$user->assignRole('admin'); // Assign admin role
 ```
 
-4. **Add new roles**
+### 4. Adding New Roles
 
-* Create role via Spatie
-* Update `LoginForm.php` redirection:
+* Create role via the Artisan command: `php artisan role:create new_role`
+* Update `LoginForm.php` redirection logic to handle the new role:
 
 ```php
 if ($user->hasRole('new_role')) {
@@ -251,15 +269,184 @@ if ($user->hasRole('new_role')) {
 }
 ```
 
+### 5. Role-Based Redirection Logic
+
+The login system redirects users based on their roles:
+- **Admin** → `/admin`
+- **Member** → `/member` (requires verified email)
+- **Customer** → `/`
+- **Manager** → `/`
+- **Fallback** → `/`
+
 ---
 
-## 🔄 Redirection Logic
+## 👤 User Profiles System
 
-* **Admin** → `/admin` 
-* **Member** → `/member` (requires verified email)
-* **Customer** → `/` 
-* **Manager** → `/` 
-* **Fallback** → `/`
+### Overview
+The package includes a complete user profile management system with avatar uploads, privacy controls, and profile completion tracking.
+
+### Features
+
+#### Profile Management (`ProfileEditor`)
+- **Bio** - Rich text biography (500 chars max)
+- **Contact Information** - Phone number and website
+- **Location** - Country, state, city, and address using geographical data
+- **Privacy Settings** - Granular controls for profile visibility
+- **Profile Completion** - Real-time progress tracking
+
+#### Avatar System (`AvatarUpload`)
+- **Image Processing** - Automatic cropping and resizing to squares
+- **Multiple Sizes** - 300x300 avatar + 100x100 thumbnail
+- **File Validation** - Support for JPG, PNG, GIF, WebP (max 5MB)
+- **Storage Management** - Organized file storage with automatic cleanup
+
+#### Privacy Controls
+- **Profile Visibility** - Public/private profile toggle
+- **Field Visibility** - Control which fields appear publicly
+- **Message Settings** - Allow/disallow user messages
+- **Email Privacy** - Hide/show email address
+
+### Usage Examples
+
+#### Accessing Profile Data
+```php
+// Get user profile
+$user = Auth::user();
+$profile = $user->profile ?? $user->getOrCreateProfile();
+
+// Check profile completion
+if ($user->hasCompleteProfile()) {
+    // User has 80%+ complete profile
+}
+
+// Get avatar URL
+$avatarUrl = $user->avatar_url;
+$thumbnailUrl = $user->thumbnail_url;
+```
+
+#### Profile Completion Tracking
+```php
+// Calculate completion percentage
+$percentage = $profile->calculateCompletionPercentage();
+
+// Update completion percentage
+$profile->updateCompletionPercentage();
+
+// Get completion status message
+$message = $profile->completion_percentage < 50 
+    ? 'Profile needs more information' 
+    : 'Looking good!';
+```
+
+#### Privacy Settings
+```php
+// Check if user can view another profile
+if (auth()->user()->canViewProfile($targetUser)) {
+    // Show profile
+}
+
+// Get privacy settings
+$privacy = $profile->privacy_settings;
+$showPhone = $privacy['show_phone'] ?? true;
+```
+
+### Blade Integration
+
+#### Profile Editor
+```blade
+<livewire:profile.profile-editor />
+```
+
+#### Avatar Upload
+```blade
+<livewire:profile.avatar-upload />
+```
+
+#### Display User Avatar
+```blade
+<img src="{{ $user->thumbnail_url }}" alt="{{ $user->display_name }}" />
+```
+
+### Routes
+
+#### Profile Management
+- `GET /profile` - View own profile
+- `GET /profile/edit` - Edit profile form
+- `GET /users/{user}` - View public profile (if allowed)
+
+#### API Endpoints
+- `GET /api/profile/states/{country}` - Get states for country
+- `GET /api/profile/cities/{state}` - Get cities for state
+
+### Database Schema
+
+#### Profiles Table
+```sql
+- id (primary)
+- user_id (foreign key, unique)
+- bio (text, nullable)
+- phone (string, nullable)
+- website (string, nullable)
+- country_id (foreign key, nullable)
+- state_id (foreign key, nullable)
+- city_id (foreign key, nullable)
+- address (string, nullable)
+- privacy_settings (json, nullable)
+- completion_percentage (integer, default 0)
+- timestamps
+```
+
+#### Avatars Table
+```sql
+- id (primary)
+- profile_id (foreign key, unique)
+- original_name (string)
+- file_path (string)
+- file_name (string)
+- mime_type (string)
+- file_size (integer)
+- width (integer)
+- height (integer)
+- disk (string, default 'public')
+- timestamps
+```
+
+### File Storage
+- **Avatars**: `storage/app/public/avatars/`
+- **Thumbnails**: `storage/app/public/avatars/thumbnails/`
+- **Public URL**: `/storage/avatars/`
+
+### Image Processing
+- **Automatic Cropping** - Centers and crops to square format
+- **Resizing** - 300x300 for avatars, 100x100 for thumbnails
+- **Quality** - JPEG compression at 90% quality
+- **Formats** - Converts all uploads to JPEG for consistency
+
+---
+
+## 🔄 Available Commands
+
+### Composer Scripts
+- `composer run setup` - Complete project setup
+- `composer run dev` - Development server with all services
+- `composer run test` - Run test suite
+
+### Artisan Commands
+- `php artisan role:create {name}` - Create a new role
+- `php artisan serve` - Start development server
+- `php artisan migrate` - Run database migrations
+- `php artisan queue:work` - Start queue worker
+- `php artisan pail` - View real-time logs
+
+### Database Seeding
+The project includes comprehensive geographical data seeders:
+- `CountriesTableSeeder` - 250+ countries
+- `StatesTableSeeder` - 5,000+ states/provinces
+- `CitiesTableChunk*Seeder` - 150,000+ cities (split into 5 chunks)
+- `CountySeeder` - 47 Kenyan counties
+- `SubCountySeeder` - Kenyan constituencies and wards
+
+---
 
 ## 🎨 UI Components
 
@@ -282,21 +469,59 @@ if ($user->hasRole('new_role')) {
 
 ```
 app/
-├── Livewire/Auth/          # RegistrationForm.php, LoginForm.php
-├── Http/Controllers/Auth/
+├── Console/Commands/         # CreateRole.php - Role creation command
+├── Http/
+│   ├── Controllers/
+│   │   ├── Auth/           # Login, Register, Password controllers
+│   │   └── Controller.php  # Base controller
+│   ├── Kernel.php          # HTTP middleware
+│   └── Middleware/         # Custom middleware
+├── Livewire/
+│   ├── Auth/               # RegistrationForm.php, LoginForm.php
+│   └── Profile/            # ProfileEditor.php, AvatarUpload.php
+├── Models/
+│   ├── User.php            # User model with roles and profile relationship
+│   ├── Country.php         # Country model
+│   ├── State.php           # State/Province model
+│   ├── City.php            # City model
+│   ├── County.php          # Kenyan county model
+│   ├── SubCounty.php       # Kenyan sub-county model
+│   ├── Profile.php         # User profile model
+│   └── Avatar.php          # Avatar model with image processing
+├── Notifications/          # Email notifications
+├── Providers/              # Service providers
+└── Services/
+    ├── EmailService.php    # Email handling service
+    └── AvatarUploadService.php # Image processing and upload service
 database/
-├── migrations/
-├── seeders/
+├── factories/              # Model factories
+├── migrations/             # Database migrations
+└── seeders/               # Data seeders (geographical data + ProfileSeeder)
 resources/
 ├── views/
-│   ├── layouts/auth.blade.php
-│   ├── livewire/auth/
-│   └── auth/
-├── js/
+│   ├── layouts/
+│   │   ├── auth.blade.php
+│   │   └── app.blade.php   # Profile layout
+│   ├── livewire/
+│   │   ├── auth/
+│   │   └── profile/        # Profile component views
+│   ├── profile/            # Profile pages (show, edit, public)
+│   ├── auth/
+│   ├── components/
+│   ├── emails/
+│   └── welcome.blade.php
+├── css/                   # Tailwind CSS
+└── js/                    # JavaScript assets
+public/
+├── images/                # Default avatar and other assets
+└── storage/               # Public file storage (avatars)
 routes/
-├── web.php
-└── api.php
+├── web.php                # Web routes (includes profile routes)
+├── api.php                # API routes
+└── console.php            # Console routes
 composer.json
+package.json
+vite.config.js
 ```
 
 ## �️ Security
@@ -344,35 +569,52 @@ Update `resources/views/layouts/auth.blade.php`:
 
 ## 🔄 Available Routes
 
-**Authentication**
+### Authentication Routes
 
-* `GET /login` → login form
-* `POST /login` → login submission
+**Guest Routes (middleware: guest)**
 * `GET /register` → registration form
 * `POST /register` → registration submission
+* `GET /login` → login form
+* `POST /login` → login submission
+* `GET /forgot-password` → password reset request form
+* `POST /forgot-password` → send password reset link
+* `GET /reset-password/{token}` → password reset form
+* `POST /reset-password` → password reset submission
+
+**Authenticated Routes**
 * `POST /logout` → logout
 
-**Email Verification**
+### Email Verification Routes (middleware: auth)
+* `GET /email/verify` → verification notice page
+* `GET /email/verify/{id}/{hash}` → verify email (signed)
+* `POST /email/verification-notification` → resend verification link (throttled)
 
-* `GET /email/verify` → verification notice
-* `GET /email/verify/{id}/{hash}` → verify email
-* `POST /email/verification-notification` → resend
+### General Routes
+* `GET /` → welcome page
 
-**Password Reset**
-
-* `GET /forgot-password` → form
-* `POST /forgot-password` → send link
-* `GET /reset-password/{token}` → form
-* `POST /reset-password` → submission
+### Route Implementation Details
+- Uses controller-based routing with `Route::controller()`
+- Email verification includes welcome email functionality
+- Password reset uses Laravel's built-in functionality
+- All auth routes are properly grouped by middleware
 
 ## 🛠️ Dependencies
 
-* PHP >= 8.2
-* Laravel ^12.0
-* Livewire ^4.1
-* Spatie Laravel Permission ^6.24
-* Tailwind CSS
-* Node.js & NPM
+* **PHP >= 8.2** - Core requirement
+* **Laravel ^12.0** - Framework
+* **Livewire ^4.1** - Dynamic components
+* **Spatie Laravel Permission ^6.24** - Role/permission system
+* **Tailwind CSS ^4.0** - Styling framework
+* **Vite ^7.0.7** - Asset bundling
+* **Node.js & NPM** - Frontend build tools
+* **Intervention Image ^3.8** - Image processing for avatars
+
+### Development Dependencies
+* **Laravel Pint ^1.24** - Code style
+* **Laravel Sail ^1.41** - Docker environment
+* **PHPUnit ^11.5.3** - Testing framework
+* **Faker ^1.23** - Test data generation
+* **Concurrently ^9.0.1** - Parallel process running
 
 ## 📝 Environment Variables
 
@@ -392,10 +634,20 @@ DB_PASSWORD=
 MAIL_MAILER=smtp
 MAIL_HOST=127.0.0.1
 MAIL_PORT=2525
-MAIL_USERNAME=null
+_USERNAME=null
 MAIL_PASSWORD=null
 MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+# Queue Configuration
+QUEUE_CONNECTION=database
+
+# Cache Configuration
+CACHE_DRIVER=file
 ```
+
+### Email Configuration
+The project includes an `EmailService` for handling welcome emails and notifications. Configure your mail settings in the `.env` file for email verification to work properly.
 
 ## 🚀 Deployment
 
@@ -450,9 +702,62 @@ If you encounter any issues:
 
 ## 🔄 Version History
 
-* **v1.0.2** - Added comprehensive geographical data and enhanced SubCounty model
+* **v1.1.0** - Added comprehensive User Profiles system with avatar uploads, privacy settings, and profile completion tracking
+* **v1.0.2** - Added comprehensive geographical data and enhanced SubCounty model with advanced query methods
 * **v1.0.1** - Updated documentation and GitHub repository links
 * **v1.0.0** - Initial release with Laravel 12, Livewire 4.1, Spatie Permission
+
+## 📊 Project Statistics
+
+- **Models**: 8 (User, Profile, Avatar, Country, State, City, County, SubCounty)
+- **Livewire Components**: 4 (RegistrationForm, LoginForm, ProfileEditor, AvatarUpload)
+- **Console Commands**: 1 (CreateRole)
+- **Services**: 2 (EmailService, AvatarUploadService)
+- **Database Seeders**: 10 (including 5 chunks for cities data + ProfileSeeder)
+- **Controllers**: Multiple auth controllers in Auth/ and Admin/ namespaces
+- **Migration Files**: 11 (including profiles and avatars tables)
+
+## 🔍 Key Features Deep Dive
+
+### User Profiles System
+The profiles system provides a complete user experience with:
+- **Profile Management** - Edit bio, contact info, location with geographical data integration
+- **Avatar System** - Upload, crop, resize images with automatic thumbnail generation
+- **Privacy Controls** - Granular settings for profile visibility and data sharing
+- **Completion Tracking** - Real-time progress indicator to encourage profile completion
+
+### SubCounty Model Advanced Features
+The `SubCounty` model includes specialized query methods for Kenyan administrative data:
+- `getUniqueConstituencies($countyId)` - Get constituencies for a specific county
+- `getUniqueWards($countyId)` - Get all wards in a county
+- `getWardsByConstituency($countyId, $constituencyName)` - Get wards in a specific constituency
+- `getAllUniqueConstituencies()` - Get all constituencies nationwide
+- `getAllUniqueWards()` - Get all wards nationwide
+- `getByCounty($countyId)` - Get sub-counties with county relationship
+
+### Email Service Integration
+The project includes a dedicated `EmailService` that handles:
+- Welcome emails after successful email verification
+- Email notification dispatching
+- Centralized email template management
+
+### Avatar Upload Service
+The `AvatarUploadService` provides:
+- Image processing with Intervention Image
+- Automatic square cropping and resizing
+- Multiple size generation (avatar + thumbnail)
+- File validation and storage management
+- Cleanup and organization of uploaded files
+
+### Security Features
+- Role-based access control using Spatie Laravel Permission
+- Super admin override capability
+- Email verification for member roles
+- Password strength validation
+- CSRF protection
+- Bcrypt password hashing
+- Profile privacy controls
+- File upload validation and processing
 
 ---
 

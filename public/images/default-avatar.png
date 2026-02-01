@@ -1,0 +1,8 @@
+<!-- This is a placeholder for a default avatar image -->
+<!-- In production, you would replace this with an actual PNG file -->
+<!-- For now, we'll use a simple SVG that can be served as a fallback -->
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="150" cy="150" r="150" fill="#E5E7EB"/>
+  <circle cx="150" cy="120" r="40" fill="#9CA3AF"/>
+  <path d="M150 180C100 180 60 210 60 250V300H240V250C240 210 200 180 150 180Z" fill="#9CA3AF"/>
+</svg>

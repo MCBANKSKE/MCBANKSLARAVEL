@@ -74,3 +74,45 @@ Route::middleware('auth')->group(function () {
 Route::get('/', function () {
     return view('welcome');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Profile Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+    // Profile Management
+    Route::get('/profile', function () {
+        return view('profile.show');
+    })->name('profile.show');
+    
+    Route::get('/profile/edit', function () {
+        return view('profile.edit');
+    })->name('profile.edit');
+    
+    // Profile API Routes (for AJAX calls)
+    Route::prefix('api/profile')->group(function () {
+        Route::get('/states/{country}', function ($country) {
+            return \App\Models\State::where('country_id', $country)
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        })->name('api.profile.states');
+        
+        Route::get('/cities/{state}', function ($state) {
+            return \App\Models\City::where('state_id', $state)
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        })->name('api.profile.cities');
+    });
+    
+    // Public Profile Viewing
+    Route::get('/users/{user}', function (\App\Models\User $user) {
+        // Check if current user can view the target profile
+        if (!auth()->user()->canViewProfile($user)) {
+            abort(403, 'This profile is private');
+        }
+        
+        return view('profile.public', ['user' => $user]);
+    })->name('profile.public');
+});
