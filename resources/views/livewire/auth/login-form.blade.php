@@ -127,6 +127,11 @@ TIPS:
             </div>
         @endif
     </div>
+
+    <!-- Social Login Options -->
+    <div class="mt-6">
+        <livewire:auth.social-login :show-divider="true" :show-label="true" />
+    </div>
 </div>
 
 {{-- 

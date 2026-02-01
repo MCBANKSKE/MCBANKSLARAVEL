@@ -253,6 +253,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Social Account Management -->
+    <div class="mt-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <livewire:auth.social-account-manager />
+        </div>
+    </div>
 </div>
 
 <!-- Notification Toast -->

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
@@ -56,6 +57,14 @@ class User extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    /**
+     * Get the user's social accounts.
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
     }
 
     /**
@@ -151,5 +160,79 @@ class User extends Authenticatable
     public function getLocationAttribute(): string
     {
         return $this->profile?->full_location ?? '';
+    }
+
+    /**
+     * Check if user has social account for specific provider.
+     */
+    public function hasSocialAccount(string $provider): bool
+    {
+        return $this->socialAccounts()->byProvider($provider)->exists();
+    }
+
+    /**
+     * Get social account for specific provider.
+     */
+    public function getSocialAccount(string $provider): ?SocialAccount
+    {
+        return $this->socialAccounts()->byProvider($provider)->first();
+    }
+
+    /**
+     * Get all connected social providers.
+     */
+    public function getConnectedProvidersAttribute(): array
+    {
+        return $this->socialAccounts()->pluck('provider')->toArray();
+    }
+
+    /**
+     * Check if user has any social accounts.
+     */
+    public function hasSocialAccounts(): bool
+    {
+        return $this->socialAccounts()->exists();
+    }
+
+    /**
+     * Find user by social account.
+     */
+    public static function findBySocialAccount(string $provider, string $providerId): ?self
+    {
+        return static::whereHas('socialAccounts', function ($query) use ($provider, $providerId) {
+            $query->where('provider', $provider)->where('provider_id', $providerId);
+        })->first();
+    }
+
+    /**
+     * Create user from social account data.
+     */
+    public static function createFromSocialAccount(array $socialData): self
+    {
+        $user = static::create([
+            'name' => $socialData['name'] ?? $socialData['nickname'] ?? 'Unknown User',
+            'email' => $socialData['email'] ?? null,
+            'password' => bcrypt(\Str::random(32)), // Random password
+            'email_verified_at' => $socialData['email'] ? now() : null,
+        ]);
+
+        // Create social account
+        $user->socialAccounts()->create([
+            'provider' => $socialData['provider'],
+            'provider_id' => $socialData['provider_id'],
+            'provider_token' => $socialData['token'] ?? null,
+            'provider_refresh_token' => $socialData['refresh_token'] ?? null,
+            'provider_expires_in' => $socialData['expires_in'] ?? null,
+            'provider_data' => $socialData['user'] ?? null,
+            'nickname' => $socialData['nickname'] ?? null,
+            'name' => $socialData['name'] ?? null,
+            'email' => $socialData['email'] ?? null,
+            'avatar' => $socialData['avatar'] ?? null,
+        ]);
+
+        // Create profile
+        $user->getOrCreateProfile();
+
+        return $user;
     }
 }

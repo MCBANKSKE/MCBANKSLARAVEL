@@ -21,6 +21,9 @@ A Laravel starter template with role-based authentication, Livewire components, 
 * **Avatar Upload** - Image processing with thumbnails and cropping
 * **Privacy Settings** - Granular privacy controls
 * **Profile Completion** - Progress tracking and indicators
+* **Social Authentication** - OAuth login with Google, GitHub, Twitter
+* **Account Linking** - Connect multiple social accounts
+* **Account Merging** - Smart conflict resolution
 
 ## 📦 Installation
 
@@ -424,7 +427,213 @@ $showPhone = $privacy['show_phone'] ?? true;
 
 ---
 
-## 🔄 Available Commands
+## � Social Authentication System
+
+### Overview
+The package includes a comprehensive social authentication system using Laravel Socialite, supporting OAuth login with Google, GitHub, and Twitter. Features include account linking, smart conflict resolution, and seamless integration with the existing user profile system.
+
+### Supported Providers
+- **Google** - Google OAuth 2.0 authentication
+- **GitHub** - GitHub OAuth authentication  
+- **Twitter** - Twitter OAuth 2.0 authentication
+
+### Features
+
+#### Social Login (`SocialLogin`)
+- **Multiple Providers** - Support for Google, GitHub, Twitter
+- **Account Creation** - Automatic user creation from social data
+- **Account Linking** - Link social accounts to existing users
+- **Smart Merging** - Intelligent conflict resolution
+- **Token Management** - OAuth token storage and refresh
+
+#### Account Management (`SocialAccountManager`)
+- **Connected Accounts** - View all linked social accounts
+- **Account Status** - Token validity and connection status
+- **Disconnect Accounts** - Safe removal with validation
+- **Security Controls** - Prevent locking out users
+
+#### Account Linking System
+- **Email Matching** - Automatic linking for matching emails
+- **Manual Linking** - Users can manually link accounts
+- **Conflict Prevention** - Prevent duplicate account linking
+- **Profile Integration** - Sync social data with user profiles
+
+### Configuration
+
+#### Environment Variables
+Add these to your `.env` file:
+
+```env
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_REDIRECT_URI="${APP_URL}/auth/github/callback"
+
+# Twitter OAuth
+TWITTER_CLIENT_ID=your_twitter_client_id
+TWITTER_CLIENT_SECRET=your_twitter_client_secret
+TWITTER_REDIRECT_URI="${APP_URL}/auth/twitter/callback"
+```
+
+#### OAuth App Setup
+
+**Google:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized redirect URI
+
+**GitHub:**
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Create new OAuth App
+3. Set authorization callback URL
+4. Copy Client ID and Secret
+
+**Twitter:**
+1. Go to [Twitter Developer Portal](https://developer.twitter.com/)
+2. Create new project and app
+3. Enable OAuth 2.0
+4. Set callback URL
+5. Generate Client ID and Secret
+
+### Usage Examples
+
+#### Social Login Button
+```blade
+<!-- In login form -->
+<livewire:auth.social-login :show-divider="true" />
+
+<!-- Compact version -->
+<livewire:auth.social-login :show-compact="true" />
+
+<!-- Icons only -->
+<livewire:auth.social-login :show-icons-only="true" />
+```
+
+#### Account Management
+```blade
+<!-- In profile edit page -->
+<livewire:auth.social-account-manager />
+```
+
+#### Programmatic Social Login
+```php
+use App\Services\SocialAuthService;
+
+// Handle social login
+$socialUser = Socialite::driver('google')->user();
+$user = $socialAuthService->handleSocialLogin('google', $socialUser);
+
+// Check user social accounts
+if ($user->hasSocialAccount('google')) {
+    $googleAccount = $user->getSocialAccount('google');
+}
+
+// Disconnect social account
+$socialAuthService->disconnectSocialAccount($user, 'google');
+```
+
+#### Social Account Data
+```php
+// Get connected providers
+$providers = $user->connected_providers; // ['google', 'github']
+
+// Check token validity
+$socialAccount = $user->getSocialAccount('google');
+if ($socialAccount->hasValidToken()) {
+    // Token is valid
+}
+
+// Get provider-specific data
+$avatar = $socialAccount->avatar_url;
+$nickname = $socialAccount->nickname;
+```
+
+### Routes
+
+#### Authentication Routes
+- `GET /auth/{provider}` - Redirect to OAuth provider
+- `GET /auth/{provider}/callback` - Handle OAuth callback
+- `POST /auth/{provider}/disconnect` - Disconnect social account
+- `GET /auth/{provider}/link` - Link social account to existing user
+- `GET /auth/{provider}/link/callback` - Handle linking callback
+- `GET /api/social/providers` - Get available providers
+
+### Database Schema
+
+#### Social Accounts Table
+```sql
+- id (primary)
+- user_id (foreign key, cascade delete)
+- provider (string) - google, github, twitter
+- provider_id (string, unique) - Provider's user ID
+- provider_token (string, nullable) - OAuth access token
+- provider_refresh_token (string, nullable) - OAuth refresh token
+- provider_expires_in (integer, nullable) - Token expiration timestamp
+- provider_data (json, nullable) - Raw provider data
+- nickname (string, nullable) - Provider username
+- name (string, nullable) - Full name from provider
+- email (string, nullable) - Email from provider
+- avatar (string, nullable) - Avatar URL from provider
+- timestamps
+```
+
+### Security Features
+
+#### Token Management
+- **Secure Storage** - Tokens encrypted in database
+- **Expiration Handling** - Automatic token refresh
+- **Revocation** - Safe token invalidation
+- **Scope Limitation** - Minimal required permissions
+
+#### Account Protection
+- **Conflict Resolution** - Smart email matching
+- **Duplicate Prevention** - Multiple account safeguards
+- **Disconnect Validation** - Prevent account lockout
+- **Privacy Controls** - Granular data sharing settings
+
+#### Session Security
+- **State Verification** - CSRF protection
+- **Redirect Validation** - Safe URL redirection
+- **Session Binding** - Secure session handling
+- **Rate Limiting** - Prevent abuse
+
+### Integration with User Profiles
+
+#### Profile Sync
+- **Avatar Import** - Import social avatars
+- **Name Sync** - Sync display names
+- **Bio Updates** - Update profile bio with social data
+- **Location Data** - Import location information
+
+#### Privacy Integration
+- **Field Visibility** - Respect privacy settings
+- **Public Profiles** - Social account display options
+- **Data Control** - User control over shared data
+
+### Error Handling
+
+#### Common Scenarios
+- **Provider Errors** - Graceful OAuth failure handling
+- **Network Issues** - Retry mechanisms
+- **Invalid Tokens** - Automatic token refresh
+- **Account Conflicts** - User-friendly resolution
+
+#### User Feedback
+- **Clear Messages** - Informative error messages
+- **Recovery Options** - Alternative login methods
+- **Status Indicators** - Connection status display
+- **Help Links** - Support documentation
+
+---
+
+## � Available Commands
 
 ### Composer Scripts
 - `composer run setup` - Complete project setup
@@ -473,30 +682,35 @@ app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Auth/           # Login, Register, Password controllers
+│   │   ├── SocialAuthController.php # Social authentication
 │   │   └── Controller.php  # Base controller
 │   ├── Kernel.php          # HTTP middleware
 │   └── Middleware/         # Custom middleware
 ├── Livewire/
 │   ├── Auth/               # RegistrationForm.php, LoginForm.php
+│   │   ├── SocialLogin.php      # Social login component
+│   │   └── SocialAccountManager.php # Account management
 │   └── Profile/            # ProfileEditor.php, AvatarUpload.php
 ├── Models/
-│   ├── User.php            # User model with roles and profile relationship
+│   ├── User.php            # User model with roles and social relationships
 │   ├── Country.php         # Country model
 │   ├── State.php           # State/Province model
 │   ├── City.php            # City model
 │   ├── County.php          # Kenyan county model
 │   ├── SubCounty.php       # Kenyan sub-county model
 │   ├── Profile.php         # User profile model
-│   └── Avatar.php          # Avatar model with image processing
+│   ├── Avatar.php          # Avatar model with image processing
+│   └── SocialAccount.php   # Social account model
 ├── Notifications/          # Email notifications
 ├── Providers/              # Service providers
 └── Services/
     ├── EmailService.php    # Email handling service
-    └── AvatarUploadService.php # Image processing and upload service
+    ├── AvatarUploadService.php # Image processing and upload service
+    └── SocialAuthService.php # OAuth authentication service
 database/
 ├── factories/              # Model factories
 ├── migrations/             # Database migrations
-└── seeders/               # Data seeders (geographical data + ProfileSeeder)
+└── seeders/               # Data seeders (geographical data + ProfileSeeder + SocialAccountSeeder)
 resources/
 ├── views/
 │   ├── layouts/
@@ -504,6 +718,8 @@ resources/
 │   │   └── app.blade.php   # Profile layout
 │   ├── livewire/
 │   │   ├── auth/
+│   │   │   ├── social-login.blade.php
+│   │   │   └── social-account-manager.blade.php
 │   │   └── profile/        # Profile component views
 │   ├── profile/            # Profile pages (show, edit, public)
 │   ├── auth/
@@ -516,7 +732,7 @@ public/
 ├── images/                # Default avatar and other assets
 └── storage/               # Public file storage (avatars)
 routes/
-├── web.php                # Web routes (includes profile routes)
+├── web.php                # Web routes (includes profile and social routes)
 ├── api.php                # API routes
 └── console.php            # Console routes
 composer.json
@@ -604,6 +820,7 @@ Update `resources/views/layouts/auth.blade.php`:
 * **Laravel ^12.0** - Framework
 * **Livewire ^4.1** - Dynamic components
 * **Spatie Laravel Permission ^6.24** - Role/permission system
+* **Laravel Socialite ^5.24** - OAuth authentication
 * **Tailwind CSS ^4.0** - Styling framework
 * **Vite ^7.0.7** - Asset bundling
 * **Node.js & NPM** - Frontend build tools
@@ -702,6 +919,7 @@ If you encounter any issues:
 
 ## 🔄 Version History
 
+* **v1.2.0** - Added comprehensive Social Authentication system with OAuth login, account linking, and smart conflict resolution
 * **v1.1.0** - Added comprehensive User Profiles system with avatar uploads, privacy settings, and profile completion tracking
 * **v1.0.2** - Added comprehensive geographical data and enhanced SubCounty model with advanced query methods
 * **v1.0.1** - Updated documentation and GitHub repository links
@@ -709,15 +927,23 @@ If you encounter any issues:
 
 ## 📊 Project Statistics
 
-- **Models**: 8 (User, Profile, Avatar, Country, State, City, County, SubCounty)
-- **Livewire Components**: 4 (RegistrationForm, LoginForm, ProfileEditor, AvatarUpload)
+- **Models**: 9 (User, Profile, Avatar, SocialAccount, Country, State, City, County, SubCounty)
+- **Livewire Components**: 6 (RegistrationForm, LoginForm, ProfileEditor, AvatarUpload, SocialLogin, SocialAccountManager)
 - **Console Commands**: 1 (CreateRole)
-- **Services**: 2 (EmailService, AvatarUploadService)
-- **Database Seeders**: 10 (including 5 chunks for cities data + ProfileSeeder)
-- **Controllers**: Multiple auth controllers in Auth/ and Admin/ namespaces
-- **Migration Files**: 11 (including profiles and avatars tables)
+- **Services**: 3 (EmailService, AvatarUploadService, SocialAuthService)
+- **Controllers**: Multiple auth controllers including SocialAuthController
+- **Database Seeders**: 11 (including 5 chunks for cities data + ProfileSeeder + SocialAccountSeeder)
+- **Migration Files**: 12 (including profiles, avatars, and social accounts tables)
 
 ## 🔍 Key Features Deep Dive
+
+### Social Authentication System
+The social authentication system provides complete OAuth integration:
+- **Multi-Provider Support** - Google, GitHub, Twitter OAuth login
+- **Account Linking** - Connect multiple social accounts to one user
+- **Smart Conflict Resolution** - Automatic email matching and duplicate prevention
+- **Token Management** - Secure OAuth token storage and refresh
+- **Security Controls** - CSRF protection, rate limiting, and safe disconnection
 
 ### User Profiles System
 The profiles system provides a complete user experience with:
@@ -749,6 +975,14 @@ The `AvatarUploadService` provides:
 - File validation and storage management
 - Cleanup and organization of uploaded files
 
+### Social Auth Service
+The `SocialAuthService` handles:
+- OAuth authentication flow management
+- Account creation and linking
+- Token storage and refresh
+- Conflict resolution and error handling
+- Provider configuration validation
+
 ### Security Features
 - Role-based access control using Spatie Laravel Permission
 - Super admin override capability
@@ -758,6 +992,9 @@ The `AvatarUploadService` provides:
 - Bcrypt password hashing
 - Profile privacy controls
 - File upload validation and processing
+- OAuth token security and management
+- Social account conflict prevention
+- Session security and rate limiting
 
 ---
 

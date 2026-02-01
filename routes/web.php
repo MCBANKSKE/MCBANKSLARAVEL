@@ -116,3 +116,26 @@ Route::middleware('auth')->group(function () {
         return view('profile.public', ['user' => $user]);
     })->name('profile.public');
 });
+
+// Social Authentication Routes
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/{provider}', [App\Http\Controllers\SocialAuthController::class, 'redirect'])
+        ->name('social.redirect');
+    
+    Route::get('/auth/{provider}/callback', [App\Http\Controllers\SocialAuthController::class, 'callback'])
+        ->name('social.callback');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/auth/{provider}/disconnect', [App\Http\Controllers\SocialAuthController::class, 'disconnect'])
+        ->name('social.disconnect');
+    
+    Route::get('/auth/{provider}/link', [App\Http\Controllers\SocialAuthController::class, 'link'])
+        ->name('social.link');
+    
+    Route::get('/auth/{provider}/link/callback', [App\Http\Controllers\SocialAuthController::class, 'linkCallback'])
+        ->name('social.link.callback');
+});
+
+Route::get('/api/social/providers', [App\Http\Controllers\SocialAuthController::class, 'providers'])
+    ->name('social.providers');
