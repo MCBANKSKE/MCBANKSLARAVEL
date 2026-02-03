@@ -18,9 +18,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create roles and permissions first
-        $this->call([
-            RoleSeeder::class,            
+        // Seed geographical data first
+        $this->call([          
             CountriesTableSeeder::class,            
             CountySeeder::class,
             SubCountySeeder::class,            
@@ -30,9 +29,12 @@ class DatabaseSeeder extends Seeder
             CitiesTableChunkThreeSeeder::class,
             CitiesTableChunkFourSeeder::class,
             CitiesTableChunkFiveSeeder::class,
-            CurrencySeeder::class,
-            ForexTradingSeeder::class,
-            SubscriptionPlanSeeder::class,
+        ]);
+
+        // Seed user-related data
+        $this->call([
+            ProfileSeeder::class,
+            SocialAccountSeeder::class,
         ]);
 
         // Create admin user

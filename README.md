@@ -32,7 +32,17 @@ A Laravel starter template with role-based authentication, Livewire components, 
 ```bash
 composer create-project mcbankske/mcbankslaravel my-project
 cd my-project
+composer run setup
 ```
+
+The setup script automatically:
+- ✅ Installs all PHP dependencies with optimized autoloader
+- ✅ Creates `.env` file from example
+- ✅ Generates application key
+- ✅ Runs database migrations
+- ✅ Seeds database with geographical data, profiles, and sample social accounts
+- ✅ Installs Node.js dependencies
+- ✅ Builds frontend assets
 
 ### Manual Setup
 
@@ -636,7 +646,7 @@ $nickname = $socialAccount->nickname;
 ## � Available Commands
 
 ### Composer Scripts
-- `composer run setup` - Complete project setup
+- `composer run setup` - Complete project setup with optimized dependencies and database seeding
 - `composer run dev` - Development server with all services
 - `composer run test` - Run test suite
 
@@ -648,12 +658,22 @@ $nickname = $socialAccount->nickname;
 - `php artisan pail` - View real-time logs
 
 ### Database Seeding
-The project includes comprehensive geographical data seeders:
-- `CountriesTableSeeder` - 250+ countries
-- `StatesTableSeeder` - 5,000+ states/provinces
-- `CitiesTableChunk*Seeder` - 150,000+ cities (split into 5 chunks)
-- `CountySeeder` - 47 Kenyan counties
-- `SubCountySeeder` - Kenyan constituencies and wards
+The project includes comprehensive data seeders:
+- **Geographical Data**: 
+  - `CountriesTableSeeder` - 250+ countries
+  - `StatesTableSeeder` - 5,000+ states/provinces
+  - `CitiesTableChunk*Seeder` - 150,000+ cities (split into 5 chunks)
+  - `CountySeeder` - Kenyan counties
+  - `SubCountySeeder` - Kenyan constituencies and wards
+- **User Data**:
+  - `ProfileSeeder` - Creates profiles for existing users with sample data
+  - `SocialAccountSeeder` - Adds sample social accounts for testing OAuth functionality
+
+Run individual seeders:
+```bash
+php artisan db:seed --class=ProfileSeeder
+php artisan db:seed --class=SocialAccountSeeder
+```
 
 ---
 
