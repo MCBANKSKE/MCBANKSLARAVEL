@@ -249,11 +249,23 @@ $allWards = SubCounty::getAllUniqueWards();
 Use the provided Artisan command to create roles:
 
 ```bash
+# Create default roles
 php artisan role:create admin
 php artisan role:create member
 php artisan role:create customer
 php artisan role:create manager
+
+# Create custom roles
+php artisan role:create moderator
+php artisan role:create editor
+php artisan role:create subscriber
 ```
+
+**Command Features:**
+- **Duplicate Prevention**: Won't create roles that already exist
+- **Case Normalization**: Automatically converts to lowercase
+- **Error Handling**: Clear success/error messages
+- **Validation**: Ensures role name is valid
 
 This uses the `CreateRole` console command in `app/Console/Commands/CreateRole.php`.
 
@@ -651,11 +663,26 @@ $nickname = $socialAccount->nickname;
 - `composer run test` - Run test suite
 
 ### Artisan Commands
-- `php artisan role:create {name}` - Create a new role
+- `php artisan role:create {name}` - Create a new role with validation and duplicate prevention
 - `php artisan serve` - Start development server
 - `php artisan migrate` - Run database migrations
+- `php artisan db:seed` - Seed database with sample data
 - `php artisan queue:work` - Start queue worker
 - `php artisan pail` - View real-time logs
+
+#### Role Creation Examples
+```bash
+# Create standard roles
+php artisan role:create admin
+php artisan role:create member
+php artisan role:create customer
+php artisan role:create manager
+
+# Create custom roles
+php artisan role:create moderator
+php artisan role:create editor
+php artisan role:create subscriber
+```
 
 ### Database Seeding
 The project includes comprehensive data seeders:

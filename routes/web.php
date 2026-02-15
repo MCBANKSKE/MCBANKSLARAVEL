@@ -43,6 +43,8 @@ Route::middleware('guest')->group(function () {
     });
 });
 
+
+
 // Logout (Authenticated only)
 Route::middleware('auth')->post('logout', [LoginController::class, 'logout'])->name('logout');
 
