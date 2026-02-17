@@ -27,24 +27,35 @@ class RoleSeeder extends Seeder
             Role::firstOrCreate(['name' => $role]);
         }
 
-        // Create admin user
-        $admin = User::firstOrCreate(
-            ['email' => 'youremail@example.com'],
-            [
-                'name' => 'Your Name',
-                'email' => 'youremail@example.com',
-                'password' => Hash::make('password'),
-                'is_superadmin' => true,
-                'email_verified_at' => now(),
-            ]
-        );
+        // Create admin user only if credentials are provided
+        $adminEmail = env('ADMIN_EMAIL');
+        $adminPassword = env('ADMIN_PASSWORD');
+        $adminName = env('ADMIN_NAME', 'Administrator');
 
-        // Assign admin role
-        $admin->assignRole('admin');
+        if ($adminEmail && $adminPassword) {
+            $admin = User::firstOrCreate(
+                ['email' => $adminEmail],
+                [
+                    'name' => $adminName,
+                    'email' => $adminEmail,
+                    'password' => Hash::make($adminPassword),
+                    'is_superadmin' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
 
-        $this->command->info('✅ Admin user created successfully!');
-        $this->command->info('📧 Email: youremail@example.com');
-        $this->command->info('🔑 Password: password');
-        $this->command->info('👤 Role: admin');
+            // Assign admin role
+            $admin->assignRole('admin');
+
+            $this->command->info('✅ Admin user created successfully!');
+            $this->command->info('📧 Email: ' . $adminEmail);
+            $this->command->info('👤 Role: admin');
+        } else {
+            $this->command->warn('⚠️  Admin credentials not provided in environment. Skipping admin user creation.');
+            $this->command->info('To create admin user, set these environment variables:');
+            $this->command->info('  ADMIN_EMAIL=admin@example.com');
+            $this->command->info('  ADMIN_PASSWORD=your_secure_password');
+            $this->command->info('  ADMIN_NAME=Administrator (optional)');
+        }
     }
 }
