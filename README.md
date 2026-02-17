@@ -271,7 +271,7 @@ This uses the `CreateRole` console command in `app/Console/Commands/CreateRole.p
 
 ### 2. Super Admin Feature
 
-* `is_super_admin` boolean field on `users` table
+* `is_superadmin` boolean field on `users` table
 * Overrides role-based permissions (not a Spatie role)
 * Can bypass all role restrictions
 * Set this field manually in the database or via seeder

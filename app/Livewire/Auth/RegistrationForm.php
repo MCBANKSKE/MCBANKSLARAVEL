@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Session;
  *      <livewire:auth.registration-form />
  *
  * 2. Database setup:
- *      - Ensure users table exists with 'is_super_admin' column.
+ *      - Ensure users table exists with 'is_superadmin' column.
  *      - Run Spatie migrations for roles/permissions.
  *
  * 3. Roles:
