@@ -121,23 +121,67 @@ Route::middleware('auth')->group(function () {
 
 // Social Authentication Routes
 Route::middleware('guest')->group(function () {
-    Route::get('/auth/{provider}', [App\Http\Controllers\SocialAuthController::class, 'redirect'])
-        ->name('social.redirect');
+    // Google
+    Route::get('/auth/google/redirect', [App\Http\Controllers\Social\GoogleController::class, 'redirect'])
+        ->name('social.google.redirect');
+    Route::get('/auth/google/callback', [App\Http\Controllers\Social\GoogleController::class, 'callback'])
+        ->name('social.google.callback');
     
-    Route::get('/auth/{provider}/callback', [App\Http\Controllers\SocialAuthController::class, 'callback'])
-        ->name('social.callback');
+    // GitHub
+    Route::get('/auth/github/redirect', [App\Http\Controllers\Social\GitHubController::class, 'redirect'])
+        ->name('social.github.redirect');
+    Route::get('/auth/github/callback', [App\Http\Controllers\Social\GitHubController::class, 'callback'])
+        ->name('social.github.callback');
+    
+    // Facebook
+    Route::get('/auth/facebook/redirect', [App\Http\Controllers\Social\FacebookController::class, 'redirect'])
+        ->name('social.facebook.redirect');
+    Route::get('/auth/facebook/callback', [App\Http\Controllers\Social\FacebookController::class, 'callback'])
+        ->name('social.facebook.callback');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/auth/{provider}/disconnect', [App\Http\Controllers\SocialAuthController::class, 'disconnect'])
-        ->name('social.disconnect');
+    // Google Account Management
+    Route::post('/auth/google/disconnect', [App\Http\Controllers\Social\GoogleController::class, 'disconnect'])
+        ->name('social.google.disconnect');
+    Route::get('/auth/google/link', [App\Http\Controllers\Social\GoogleController::class, 'link'])
+        ->name('social.google.link');
+    Route::get('/auth/google/link/callback', [App\Http\Controllers\Social\GoogleController::class, 'linkCallback'])
+        ->name('social.google.link.callback');
     
-    Route::get('/auth/{provider}/link', [App\Http\Controllers\SocialAuthController::class, 'link'])
-        ->name('social.link');
+    // GitHub Account Management
+    Route::post('/auth/github/disconnect', [App\Http\Controllers\Social\GitHubController::class, 'disconnect'])
+        ->name('social.github.disconnect');
+    Route::get('/auth/github/link', [App\Http\Controllers\Social\GitHubController::class, 'link'])
+        ->name('social.github.link');
+    Route::get('/auth/github/link/callback', [App\Http\Controllers\Social\GitHubController::class, 'linkCallback'])
+        ->name('social.github.link.callback');
     
-    Route::get('/auth/{provider}/link/callback', [App\Http\Controllers\SocialAuthController::class, 'linkCallback'])
-        ->name('social.link.callback');
+    // Facebook Account Management
+    Route::post('/auth/facebook/disconnect', [App\Http\Controllers\Social\FacebookController::class, 'disconnect'])
+        ->name('social.facebook.disconnect');
+    Route::get('/auth/facebook/link', [App\Http\Controllers\Social\FacebookController::class, 'link'])
+        ->name('social.facebook.link');
+    Route::get('/auth/facebook/link/callback', [App\Http\Controllers\Social\FacebookController::class, 'linkCallback'])
+        ->name('social.facebook.link.callback');
 });
+
+// Legacy routes for backward compatibility (redirect to new routes)
+Route::get('/auth/{provider}', function ($provider) {
+    $routeName = "social.{$provider}.redirect";
+    if (Route::has($routeName)) {
+        return redirect()->route($routeName);
+    }
+    return redirect()->route('login')->with('error', 'Social provider not supported.');
+})->name('social.redirect');
+
+Route::get('/auth/{provider}/callback', function ($provider) {
+    $routeName = "social.{$provider}.callback";
+    if (Route::has($routeName)) {
+        return redirect()->route($routeName);
+    }
+    return redirect()->route('login')->with('error', 'Social provider not supported.');
+})->name('social.callback');
 
 Route::get('/api/social/providers', [App\Http\Controllers\SocialAuthController::class, 'providers'])
     ->name('social.providers');

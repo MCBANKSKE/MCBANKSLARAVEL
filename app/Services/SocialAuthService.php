@@ -196,10 +196,10 @@ class SocialAuthService
                 'icon' => 'fab fa-github',
                 'color' => 'bg-gray-800 hover:bg-gray-900',
             ],
-            'twitter' => [
-                'name' => 'Twitter',
-                'icon' => 'fab fa-twitter',
-                'color' => 'bg-blue-400 hover:bg-blue-500',
+            'facebook' => [
+                'name' => 'Facebook',
+                'icon' => 'fab fa-facebook',
+                'color' => 'bg-blue-600 hover:bg-blue-700',
             ],
         ];
     }
