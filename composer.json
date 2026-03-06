@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "mcbankske/mcbankslaravel",
     "type": "project",
-    "version": "1.2.0",
+    "version": "1.0.3",
     "description": "Laravel starter with role-based authentication, social login, user profiles, geographical data, and modern UI. Includes Spatie roles, Livewire components, Kenyan administrative data, comprehensive location information, and social authentication.",
     "keywords": ["laravel", "framework", "authentication", "roles", "permissions", "livewire", "social", "oauth", "profiles", "geographical", "kenya", "countries", "states", "cities", "starter", "scaffold"],
     "license": "MIT",
