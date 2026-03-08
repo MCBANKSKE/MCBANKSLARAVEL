@@ -20,7 +20,9 @@ class RoleSeeder extends Seeder
         // Create roles
         $roles = [
             'admin',
-            //add as many roles as you want
+            'host',
+            'guest'
+            
         ];
 
         foreach ($roles as $role) {
@@ -53,9 +55,9 @@ class RoleSeeder extends Seeder
         } else {
             $this->command->warn('⚠️  Admin credentials not provided in environment. Skipping admin user creation.');
             $this->command->info('To create admin user, set these environment variables:');
-            $this->command->info('  ADMIN_EMAIL=admin@example.com');
-            $this->command->info('  ADMIN_PASSWORD=your_secure_password');
-            $this->command->info('  ADMIN_NAME=Administrator (optional)');
+            $this->command->info('  ADMIN_EMAIL=mcbankske@gmail.com');
+            $this->command->info('  ADMIN_PASSWORD=password');
+            $this->command->info('  ADMIN_NAME=Mark Clinton');
         }
     }
 }

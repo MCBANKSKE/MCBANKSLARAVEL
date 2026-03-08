@@ -73,16 +73,28 @@
                 <!-- cta buttons: refined, using solid/outline professional pairing -->
                 <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                     @guest
-                        <a href="{{ route('login') }}" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600">
+                        <a href="{{ route('central.login') }}" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600">
                             Sign in
                         </a>
-                        <a href="{{ route('register') }}" class="px-8 py-3.5 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 text-gray-800 dark:text-gray-200 rounded-xl font-semibold shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+                        <a href="{{ route('central.register') }}" class="px-8 py-3.5 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 text-gray-800 dark:text-gray-200 rounded-xl font-semibold shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
                             Create account
                         </a>
                     @else
-                        <a href="{{ route('login') }}" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition">
-                            Dashboard
-                        </a>
+                        @auth
+                            @if(auth()->user()->hasRole('admin'))
+                                <a href="/admin" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition">
+                                    Admin Dashboard
+                                </a>
+                            @elseif(auth()->user()->hasRole('host'))
+                                <a href="/host" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition">
+                                    Host Dashboard
+                                </a>
+                            @else
+                                <a href="/guest" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition">
+                                    Guest Dashboard
+                                </a>
+                            @endif
+                        @endauth
                     @endguest
                 </div>
             </div>

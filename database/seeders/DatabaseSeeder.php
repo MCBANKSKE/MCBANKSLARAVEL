@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Seed geographical data first
-        $this->call([          
+        $this->call([   
+            RoleSeeder::class,       
             CountriesTableSeeder::class,            
             CountySeeder::class,
             SubCountySeeder::class,            
@@ -31,24 +32,5 @@ class DatabaseSeeder extends Seeder
             CitiesTableChunkFiveSeeder::class,
         ]);
 
-        // Seed user-related data
-        $this->call([
-            ProfileSeeder::class,
-            SocialAccountSeeder::class,
-        ]);
-
-        // Create admin user
-        /*$admin = User::firstOrCreate(
-            ['email' => 'youremail@domain.com'],
-            [
-                'name' => 'Your Name',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-                'is_superadmin' => true,
-            ]
-        );
-        if (!$admin->hasRole('admin')) {
-            $admin->assignRole('admin');
-        }*/
     }
 }

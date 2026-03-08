@@ -104,7 +104,7 @@ class SocialAuthService
             'name' => $socialUser->getName() ?: $username,
             'email' => $socialUser->getEmail(),
             'password' => bcrypt(\Str::random(32)),
-            'email_verified_at' => $socialUser->getEmail() ? now() : null,
+            'email_verified_at' => null, // Will be set to null for verification requirement
         ];
 
         $user = User::create($userData);
@@ -122,7 +122,13 @@ class SocialAuthService
         }
 
         // Assign default role
-        $user->assignRole('customer');
+        $user->assignRole('guest');
+
+        // Email verification - guests need to verify, admins auto-verified
+        $emailVerified = $user->hasVerifiedEmail();
+        if (!$emailVerified && !$user->hasRole('admin')) {
+            $user->sendEmailVerificationNotification();
+        }
 
         Log::info("New user created via {$provider}", [
             'user_id' => $user->id,

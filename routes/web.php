@@ -5,10 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 // Controllers
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
-use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\CentralAuthController;
 
 
 /*
@@ -17,36 +14,28 @@ use App\Http\Controllers\Auth\RegisterController;
 |--------------------------------------------------------------------------
 */
 
-// Guest Routes
+// Centralized Authentication Routes (Role-based)
 Route::middleware('guest')->group(function () {
-    // Registration
-    Route::controller(RegisterController::class)->group(function () {
-        Route::get('register', 'showRegistrationForm')->name('register');
-        Route::post('register', 'register');
-    });
-
-    // Login
-    Route::controller(LoginController::class)->group(function () {
-        Route::get('login', 'showLoginForm')->name('login');
-        Route::post('login', 'login');
-    });
-
-    // Password Reset
-    Route::controller(ForgotPasswordController::class)->group(function () {
-        Route::get('forgot-password', 'showLinkRequestForm')->name('password.request');
-        Route::post('forgot-password', 'sendResetLinkEmail')->name('password.email');
-    });
-    
-    Route::controller(ResetPasswordController::class)->group(function () {
-        Route::get('reset-password/{token}', 'showResetForm')->name('password.reset');
-        Route::post('reset-password', 'reset')->name('password.update');
+    Route::controller(CentralAuthController::class)->group(function () {
+        Route::get('/login', 'showLoginForm')->name('central.login');
+        Route::post('/login', 'login')->name('central.login.post');
+        Route::get('/register', 'showRegistrationForm')->name('central.register');
+        Route::post('/register', 'register')->name('central.register.post');
+        
+        // Password Reset Routes
+        Route::get('/forgot-password', 'showPasswordRequestForm')->name('password.request');
+        Route::post('/forgot-password', 'sendResetLinkEmail')->name('password.email');
+        Route::get('/reset-password/{token}', 'showResetForm')->name('password.reset');
+        Route::post('/reset-password', 'reset')->name('password.update');
+        
+        // Google OAuth with role selection
+        Route::get('/auth/google', 'googleRedirect')->name('central.google');
+        Route::get('/auth/google/callback', 'googleCallback')->name('central.google.callback');
     });
 });
 
-
-
 // Logout (Authenticated only)
-Route::middleware('auth')->post('logout', [LoginController::class, 'logout'])->name('logout');
+Route::middleware('auth')->post('logout', [CentralAuthController::class, 'logout'])->name('central.logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +64,29 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Role-based Dashboard Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+    // Admin Dashboard
+    Route::get('/admin', function () {
+        return '<h1>Admin Dashboard</h1><p>Welcome Admin! Your dashboard will be implemented here.</p>';
+    })->name('admin.dashboard');
+
+    // Host Dashboard
+    Route::get('/host', function () {
+        return '<h1>Host Dashboard</h1><p>Welcome Host! Your dashboard will be implemented here.</p>';
+    })->name('host.dashboard');
+
+    // Guest Dashboard
+    Route::get('/guest', function () {
+        return '<h1>Guest Dashboard</h1><p>Welcome Guest! Your dashboard will be implemented here.</p>';
+    })->name('guest.dashboard');
 });
 
 /*
@@ -119,69 +131,3 @@ Route::middleware('auth')->group(function () {
     })->name('profile.public');
 });
 
-// Social Authentication Routes
-Route::middleware('guest')->group(function () {
-    // Google
-    Route::get('/auth/google/redirect', [App\Http\Controllers\Social\GoogleController::class, 'redirect'])
-        ->name('social.google.redirect');
-    Route::get('/auth/google/callback', [App\Http\Controllers\Social\GoogleController::class, 'callback'])
-        ->name('social.google.callback');
-    
-    // GitHub
-    Route::get('/auth/github/redirect', [App\Http\Controllers\Social\GitHubController::class, 'redirect'])
-        ->name('social.github.redirect');
-    Route::get('/auth/github/callback', [App\Http\Controllers\Social\GitHubController::class, 'callback'])
-        ->name('social.github.callback');
-    
-    // Facebook
-    Route::get('/auth/facebook/redirect', [App\Http\Controllers\Social\FacebookController::class, 'redirect'])
-        ->name('social.facebook.redirect');
-    Route::get('/auth/facebook/callback', [App\Http\Controllers\Social\FacebookController::class, 'callback'])
-        ->name('social.facebook.callback');
-});
-
-Route::middleware('auth')->group(function () {
-    // Google Account Management
-    Route::post('/auth/google/disconnect', [App\Http\Controllers\Social\GoogleController::class, 'disconnect'])
-        ->name('social.google.disconnect');
-    Route::get('/auth/google/link', [App\Http\Controllers\Social\GoogleController::class, 'link'])
-        ->name('social.google.link');
-    Route::get('/auth/google/link/callback', [App\Http\Controllers\Social\GoogleController::class, 'linkCallback'])
-        ->name('social.google.link.callback');
-    
-    // GitHub Account Management
-    Route::post('/auth/github/disconnect', [App\Http\Controllers\Social\GitHubController::class, 'disconnect'])
-        ->name('social.github.disconnect');
-    Route::get('/auth/github/link', [App\Http\Controllers\Social\GitHubController::class, 'link'])
-        ->name('social.github.link');
-    Route::get('/auth/github/link/callback', [App\Http\Controllers\Social\GitHubController::class, 'linkCallback'])
-        ->name('social.github.link.callback');
-    
-    // Facebook Account Management
-    Route::post('/auth/facebook/disconnect', [App\Http\Controllers\Social\FacebookController::class, 'disconnect'])
-        ->name('social.facebook.disconnect');
-    Route::get('/auth/facebook/link', [App\Http\Controllers\Social\FacebookController::class, 'link'])
-        ->name('social.facebook.link');
-    Route::get('/auth/facebook/link/callback', [App\Http\Controllers\Social\FacebookController::class, 'linkCallback'])
-        ->name('social.facebook.link.callback');
-});
-
-// Legacy routes for backward compatibility (redirect to new routes)
-Route::get('/auth/{provider}', function ($provider) {
-    $routeName = "social.{$provider}.redirect";
-    if (Route::has($routeName)) {
-        return redirect()->route($routeName);
-    }
-    return redirect()->route('login')->with('error', 'Social provider not supported.');
-})->name('social.redirect');
-
-Route::get('/auth/{provider}/callback', function ($provider) {
-    $routeName = "social.{$provider}.callback";
-    if (Route::has($routeName)) {
-        return redirect()->route($routeName);
-    }
-    return redirect()->route('login')->with('error', 'Social provider not supported.');
-})->name('social.callback');
-
-Route::get('/api/social/providers', [App\Http\Controllers\SocialAuthController::class, 'providers'])
-    ->name('social.providers');
