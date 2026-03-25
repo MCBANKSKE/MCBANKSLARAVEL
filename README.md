@@ -9,9 +9,9 @@ A Laravel starter template with role-based authentication, Livewire components, 
 * **Laravel 12** - Latest Laravel framework
 * **Livewire 4.1** - Dynamic components without writing JavaScript
 * **Spatie Laravel Permission** - Role and permission system
-* **Role-Based Authentication** - Admin, Member, Customer, Manager
-* **Email Verification** - Required for members
-* **Multi-Step Registration** - Wizard-style form
+* **Role-Based Authentication** - Admin, Host, Guest roles with permissions
+* **Email Verification** - Required for secure account access
+* **Multi-Step Registration** - Wizard-style form with validation
 * **Modern UI** - Tailwind CSS, Glass Morphism, Gradients
 * **Password Strength Indicator**
 * **Responsive Design**
@@ -21,9 +21,23 @@ A Laravel starter template with role-based authentication, Livewire components, 
 * **Avatar Upload** - Image processing with thumbnails and cropping
 * **Privacy Settings** - Granular privacy controls
 * **Profile Completion** - Progress tracking and indicators
-* **Social Authentication** - OAuth login with Google, GitHub, Twitter
+* **Social Authentication** - OAuth login with Google, GitHub
 * **Account Linking** - Connect multiple social accounts
 * **Account Merging** - Smart conflict resolution
+
+### 🔒 Security Features
+* **Two-Factor Authentication** - TOTP support with recovery codes
+* **Granular Rate Limiting** - Endpoint-specific rate limiting rules
+* **User Activity Audit Logging** - Comprehensive security monitoring
+* **IP Blacklisting** - Automatic blocking of suspicious IPs
+* **Suspicious Activity Detection** - AI-driven anomaly detection
+* **Security Event Tracking** - Real-time security monitoring
+
+### 📚 Documentation
+* **Comprehensive API Documentation** - Complete REST API reference
+* **Developer Setup Guide** - Step-by-step development instructions
+* **Production Deployment Guide** - Multiple deployment strategies
+* **Security Best Practices** - Enterprise-grade security guidelines
 
 ## 📦 Installation
 
@@ -251,9 +265,8 @@ Use the provided Artisan command to create roles:
 ```bash
 # Create default roles
 php artisan role:create admin
-php artisan role:create member
-php artisan role:create customer
-php artisan role:create manager
+php artisan role:create host
+php artisan role:create guest
 
 # Create custom roles
 php artisan role:create moderator
@@ -298,14 +311,542 @@ if ($user->hasRole('new_role')) {
 
 The login system redirects users based on their roles:
 - **Admin** → `/admin`
-- **Member** → `/member` (requires verified email)
-- **Customer** → `/`
-- **Manager** → `/`
+- **Host** → `/host`
+- **Guest** → `/guest`
 - **Fallback** → `/`
 
 ---
 
-## 👤 User Profiles System
+## 🔒 Two-Factor Authentication
+
+### Overview
+Enterprise-grade two-factor authentication system using TOTP (Time-based One-Time Password) with comprehensive recovery options.
+
+### Features
+
+#### TOTP Authentication
+- **Google Authenticator Support** - Compatible with any TOTP app
+- **QR Code Setup** - Easy setup with QR code scanning
+- **Manual Key Entry** - Backup option for QR code issues
+- **Secure Key Generation** - Cryptographically secure secret keys
+
+#### Recovery System
+- **8 Recovery Codes** - Backup codes for account recovery
+- **Single-Use Codes** - Each code can only be used once
+- **Code Regeneration** - Generate new recovery codes anytime
+- **Downloadable Codes** - Export codes for secure storage
+
+#### Security Features
+- **Rate Limiting** - 5 attempts per 15 minutes
+- **Session Management** - Secure 2FA verification tracking
+- **Challenge Middleware** - Automatic 2FA verification for protected routes
+- **Email Notifications** - Alerts for 2FA enable/disable and recovery code usage
+
+#### User Interface
+- **Livewire Components** - Modern reactive UI components
+- **Setup Wizard** - Step-by-step 2FA setup process
+- **Status Indicators** - Clear 2FA status display
+- **Recovery Management** - Track remaining recovery codes
+
+### Configuration
+
+#### Environment Variables
+```env
+# Two-Factor Authentication (optional, defaults work fine)
+GOOGLE2FA_SECRET=
+GOOGLE2FA_QRCODE_SIZE=200
+```
+
+#### Dependencies
+```bash
+composer update
+# Required packages:
+# - pragmarx/google2fa-laravel
+# - simplesoftwareio/simple-qrcode
+```
+
+### Usage Examples
+
+#### Enable Two-Factor Authentication
+```php
+use App\Services\TwoFactorService;
+
+$user = Auth::user();
+$twoFactorService = app(TwoFactorService::class);
+
+// Generate secret key and QR code
+$secret = $twoFactorService->generateSecretKey($user);
+$qrCode = $twoFactorService->generateQrCode($user, $secret);
+
+// Enable 2FA after user verification
+$twoFactorService->enable($user, $verificationCode);
+```
+
+#### Verify Two-Factor Authentication
+```php
+// Check if user has 2FA enabled
+if ($user->hasTwoFactorEnabled()) {
+    // Verify user code
+    if ($user->verifyTwoFactorCode($request->code)) {
+        // Authentication successful
+        $user->twoFactorAuthentication->updateLastUsed();
+    }
+}
+```
+
+#### Disable Two-Factor Authentication
+```php
+$user->disableTwoFactor();
+```
+
+### Blade Integration
+```blade
+<!-- Two-Factor Authentication Component -->
+<livewire:profile.two-factor-authentication />
+```
+
+### Routes
+```php
+// Two-Factor Authentication
+Route::middleware(['auth', 'throttle:5,1'])->group(function () {
+    Route::get('/2fa/challenge', [TwoFactorController::class, 'showChallenge'])->name('2fa.challenge');
+    Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
+    Route::get('/2fa/recovery', [TwoFactorController::class, 'showRecoveryForm'])->name('2fa.recovery');
+    Route::post('/2fa/recovery/verify', [TwoFactorController::class, 'verifyRecovery'])->name('2fa.recovery.verify');
+    Route::post('/2fa/logout', [TwoFactorController::class, 'logout'])->name('2fa.logout');
+});
+```
+
+### Security Considerations
+- Store recovery codes securely offline
+- Enable 2FA on all admin accounts
+- Monitor 2FA failed attempts in audit logs
+- Regularly regenerate recovery codes
+
+---
+
+## ⚡ Rate Limiting System
+
+### Overview
+Advanced rate limiting system with endpoint-specific rules, IP blacklisting, and suspicious activity detection.
+
+### Features
+
+#### Granular Rate Limits
+- **Authentication Endpoints** - 5 attempts per 15 minutes
+- **Registration** - 3 attempts per hour
+- **Password Reset** - 3 attempts per hour
+- **Two-Factor** - 5 attempts per 15 minutes
+- **API Requests** - 1000/hour (authenticated), 100/hour (anonymous)
+- **Profile Updates** - 10 attempts per hour
+- **Avatar Uploads** - 5 attempts per hour
+
+#### Security Protection
+- **IP Blacklisting** - Automatic blocking of malicious IPs
+- **Suspicious Activity Detection** - AI-driven anomaly detection
+- **Rate Limit Headers** - Standard HTTP rate limit headers
+- **User-Based Limits** - Different limits for authenticated vs anonymous users
+
+#### Monitoring & Statistics
+- **Real-time Statistics** - Rate limiting analytics
+- **Most Common Violations** - Track frequent abusers
+- **IP Activity Tracking** - Monitor IP patterns
+- **Performance Optimized** - Redis-based caching for performance
+
+### Configuration
+
+#### Middleware Registration
+```php
+// app/Http/Kernel.php
+protected $middlewareGroups = [
+    'web' => [
+        // ... existing middleware
+        \App\Http\Middleware\LogUserActivity::class,
+    ],
+    'api' => [
+        // ... existing middleware
+        \App\Http\Middleware\RateLimitApi::class,
+    ],
+];
+
+protected $middlewareAliases = [
+    'rate.limit.auth' => \App\Http\Middleware\RateLimitAuth::class,
+    'rate.limit.profile' => \App\Http\Middleware\RateLimitProfile::class,
+];
+```
+
+#### Environment Variables
+```env
+# Rate Limiting (optional, defaults work fine)
+RATE_LIMIT_CACHE_DRIVER=redis
+RATE_LIMIT_CACHE_PREFIX=rate_limit:
+```
+
+### Usage Examples
+
+#### Check Rate Limits
+```php
+use App\Services\RateLimitingService;
+
+$rateLimiting = app(RateLimitingService::class);
+
+// Check authentication rate limit
+if ($rateLimiting->checkAuthRateLimit($request)) {
+    abort(429, 'Too many attempts');
+}
+
+// Check API rate limit
+if ($rateLimiting->checkApiRateLimit($request)) {
+    abort(429, 'API rate limit exceeded');
+}
+```
+
+#### Get Rate Limit Status
+```php
+// Get rate limit information for current user
+$status = $rateLimiting->getRateLimitStatus($request, 'auth', 5);
+
+// Output rate limit headers
+$headers = $rateLimiting->getRateLimitHeaders($request, 'api', 1000, 60);
+foreach ($headers as $key => $value) {
+    $response->headers->set($key, $value);
+}
+```
+
+#### IP Blacklisting
+```php
+// Blacklist an IP address
+$rateLimiting->blacklistIp('192.168.1.100', 60); // 60 minutes
+
+// Check if IP is blacklisted
+if ($rateLimiting->isIpBlacklisted($request->ip())) {
+    abort(429, 'Your IP has been blocked');
+}
+
+// Remove IP from blacklist
+$rateLimiting->unblacklistIp('192.168.1.100');
+```
+
+#### Log Suspicious Activity
+```php
+// Log suspicious activity for monitoring
+$rateLimiting->logSuspiciousActivity($request, 'multiple_failed_logins');
+
+// Check for suspicious activity patterns
+if ($rateLimiting->checkSuspiciousActivityRateLimit($request)) {
+    // Take action against suspicious user
+}
+```
+
+### Rate Limiting Rules
+
+#### Authentication Endpoints
+```php
+// Login attempts
+RateLimitAuth: 5 attempts per 15 minutes
+
+// Registration attempts  
+RateLimitAuth: 3 attempts per hour
+
+// Password reset requests
+RateLimitAuth: 3 attempts per hour
+```
+
+#### API Endpoints
+```php
+// Authenticated users
+RateLimitApi: 1000 requests per hour
+
+// Anonymous users
+RateLimitApi: 100 requests per hour
+
+// Specific endpoints
+RateLimitApi: Custom limits per endpoint
+```
+
+#### Profile Management
+```php
+// Profile updates
+RateLimitProfile: 10 attempts per hour
+
+// Avatar uploads
+RateLimitProfile: 5 attempts per hour
+
+// Profile views (more lenient)
+RateLimitProfile: 200 attempts per hour
+```
+
+### Response Headers
+All rate limited responses include:
+- `X-RateLimit-Limit` - Maximum requests allowed
+- `X-RateLimit-Remaining` - Requests remaining
+- `X-RateLimit-Reset` - Time when limit resets
+
+### Security Benefits
+- **Prevents Brute Force** - Limits login attempts
+- **API Protection** - Prevents API abuse
+- **Resource Conservation** - Protects server resources
+- **DDoS Mitigation** - Helps mitigate denial of service attacks
+
+---
+
+## � User Activity Audit Logging
+
+### Overview
+Comprehensive audit logging system that tracks all user activities, security events, and system changes for compliance and security monitoring.
+
+### Features
+
+#### Comprehensive Logging
+- **Authentication Events** - Login, logout, failed attempts
+- **Profile Changes** - Profile updates, avatar uploads
+- **Two-Factor Events** - 2FA enable/disable, verification attempts
+- **Social Authentication** - Social account connections/disconnections
+- **Security Events** - Suspicious activities, rate limiting violations
+- **API Access** - API requests, errors, unauthorized access
+
+#### Data Tracking
+- **Before/After Values** - Track data changes
+- **Metadata Capture** - IP addresses, user agents, request details
+- **Model Relationships** - Track changes to specific models
+- **Context Information** - Additional context for events
+
+#### Search & Analysis
+- **Advanced Filtering** - Filter by user, action, date range, level
+- **Security Event Tracking** - Special handling for security events
+- **Anomaly Detection** - Automatic detection of suspicious patterns
+- **Export Capabilities** - CSV export for compliance reporting
+
+### Configuration
+
+#### Database Migration
+```bash
+php artisan migrate
+# Creates audit_logs table with optimized indexes
+```
+
+#### Middleware Registration
+```php
+// app/Http/Kernel.php
+protected $middlewareGroups = [
+    'web' => [
+        // ... existing middleware
+        \App\Http\Middleware\LogUserActivity::class,
+    ],
+];
+```
+
+### Usage Examples
+
+#### Manual Logging
+```php
+use App\Services\AuditService;
+use App\Models\AuditLog;
+
+$auditService = app(AuditService::class);
+
+// Log authentication event
+$auditService->logAuth('login', [
+    'user_id' => $user->id,
+    'ip_address' => $request->ip(),
+    'user_agent' => $request->userAgent(),
+]);
+
+// Log profile change
+$auditService->logProfileChange('profile_updated', $user, $oldValues, $newValues);
+
+// Log security event
+$auditService->logSecurity('suspicious_login', 'Multiple failed logins detected', [
+    'ip_address' => $request->ip(),
+    'attempts' => 5,
+], 'warning');
+```
+
+#### Query Audit Logs
+```php
+// Get user's audit logs
+$logs = $auditService->getUserLogs($user, 50, [
+    'start_date' => now()->subDays(30),
+    'end_date' => now(),
+    'level' => 'warning'
+]);
+
+// Get security events
+$securityLogs = $auditService->getSecurityLogs(100);
+
+// Get error logs
+$errorLogs = $auditService->getErrorLogs(50);
+```
+
+#### Model Logging
+```php
+// Using the AuditLog model directly
+AuditLog::log([
+    'user_id' => auth()->id(),
+    'action' => 'profile_updated',
+    'description' => 'User updated their profile',
+    'old_values' => ['name' => 'Old Name'],
+    'new_values' => ['name' => 'New Name'],
+    'model_type' => \App\Models\Profile::class,
+    'model_id' => $profile->id,
+    'level' => 'info',
+]);
+```
+
+### Audit Log Events
+
+#### Authentication Events
+```php
+// Successful login
+AuditLog::logLogin($user, $ipAddress, $userAgent);
+
+// Failed login attempt
+AuditLog::logLoginFailed($email, $ipAddress, $userAgent);
+
+// User logout
+AuditLog::logLogout($user, $ipAddress, $userAgent);
+```
+
+#### Two-Factor Events
+```php
+// 2FA enabled
+AuditLog::logTwoFactorEnabled($user);
+
+// 2FA disabled
+AuditLog::logTwoFactorDisabled($user);
+
+// 2FA verification failed
+AuditLog::logTwoFactorFailed($user, $ipAddress);
+
+// Recovery code used
+AuditLog::logRecoveryCodeUsed($user, $ipAddress);
+```
+
+#### Profile Events
+```php
+// Profile updated
+AuditLog::logProfileUpdate($user, $oldValues, $newValues);
+
+// Password reset requested
+AuditLog::logPasswordResetRequest($user, $ipAddress);
+
+// Password reset completed
+AuditLog::logPasswordResetCompleted($user, $ipAddress);
+```
+
+#### Social Authentication Events
+```php
+// Social account connected
+AuditLog::logSocialAccountConnected($user, 'google', $ipAddress);
+
+// Social account disconnected
+AuditLog::logSocialAccountDisconnected($user, 'github', $ipAddress);
+```
+
+### Database Schema
+
+#### Audit Logs Table
+```sql
+- id (primary)
+- user_id (foreign key, nullable, set null on delete)
+- action (string) - Event type (login, profile_updated, etc.)
+- description (text, nullable) - Human-readable description
+- ip_address (string, nullable) - Client IP address
+- user_agent (text, nullable) - Browser user agent
+- old_values (json, nullable) - Before values for changes
+- new_values (json, nullable) - After values for changes
+- model_type (string, nullable) - Related model type
+- model_id (unsigned big integer, nullable) - Related model ID
+- level (string, default 'info') - info, warning, error, critical
+- metadata (json, nullable) - Additional context
+- created_at (timestamp) - Event timestamp
+```
+
+### Advanced Features
+
+#### Statistics & Analytics
+```php
+// Get audit statistics
+$stats = $auditService->getStatistics();
+
+// Returns:
+// - total_logs, last_24_hours, last_7_days, last_30_days
+// - security_events, error_events, unique_users
+// - top_actions, top_ips, activity_by_level
+```
+
+#### Suspicious Activity Detection
+```php
+// Detect suspicious patterns
+$patterns = $auditService->getSuspiciousActivity();
+
+// Returns:
+// - multiple_failed_logins (same IP, many attempts)
+// - rapid_profile_updates (same user, many changes)
+// - unusual_ip_activity (user from many IPs)
+```
+
+#### Security Anomaly Detection
+```php
+// Check for security anomalies
+$anomalies = $auditService->checkSecurityAnomalies();
+
+// Returns:
+// - concurrent_logins (same user, different IPs)
+// - excessive_password_resets (same IP, many requests)
+```
+
+#### Export & Compliance
+```php
+// Export audit logs to CSV
+$csv = $auditService->exportToCSV([
+    'start_date' => now()->subDays(30),
+    'end_date' => now(),
+    'user_id' => $userId,
+]);
+
+// Cleanup old logs (automatic retention)
+$deleted = $auditService->cleanupOldLogs(90); // Keep 90 days
+```
+
+### Performance Considerations
+
+#### Database Indexes
+- `user_id, created_at` - User activity queries
+- `action, created_at` - Action-based queries
+- `model_type, model_id` - Model relationship queries
+- `ip_address` - IP-based queries
+- `level, created_at` - Security event queries
+
+#### Caching Strategy
+- Statistics cached for 5 minutes
+- Rate limit counters use Redis
+- Automatic cache invalidation on new logs
+
+#### Data Retention
+- Automatic cleanup of old logs (default 90 days)
+- Configurable retention period
+- Efficient bulk deletion operations
+
+### Compliance & Security
+
+#### GDPR Compliance
+- User activity tracking for audit purposes
+- Data export capabilities for user requests
+- Configurable data retention policies
+
+#### Security Monitoring
+- Real-time security event tracking
+- Automatic anomaly detection
+- Integration with rate limiting system
+- Alert system for critical events
+
+#### Privacy Protection
+- Sensitive data filtering in logs
+- User consent tracking
+- Data minimization principles
+
+---
 
 ### Overview
 The package includes a complete user profile management system with avatar uploads, privacy controls, and profile completion tracking.
@@ -873,6 +1414,10 @@ Update `resources/views/layouts/auth.blade.php`:
 * **Node.js & NPM** - Frontend build tools
 * **Intervention Image ^3.8** - Image processing for avatars
 
+### Security & Authentication Dependencies
+* **PragmaRX Google2FA ^2.0** - Two-factor authentication
+* **Simple QrCode ^4.2** - QR code generation for 2FA
+
 ### Development Dependencies
 * **Laravel Pint ^1.24** - Code style
 * **Laravel Sail ^1.41** - Docker environment
@@ -966,6 +1511,7 @@ If you encounter any issues:
 
 ## 🔄 Version History
 
+* **v1.3.0** - **SECURITY & DOCUMENTATION UPDATE** - Added comprehensive security features including Two-Factor Authentication, Granular Rate Limiting, User Activity Audit Logging, complete API documentation, developer setup guide, and production deployment guide
 * **v1.2.0** - Added comprehensive Social Authentication system with OAuth login, account linking, and smart conflict resolution
 * **v1.1.0** - Added comprehensive User Profiles system with avatar uploads, privacy settings, and profile completion tracking
 * **v1.0.2** - Added comprehensive geographical data and enhanced SubCounty model with advanced query methods
@@ -974,13 +1520,22 @@ If you encounter any issues:
 
 ## 📊 Project Statistics
 
-- **Models**: 9 (User, Profile, Avatar, SocialAccount, Country, State, City, County, SubCounty)
-- **Livewire Components**: 6 (RegistrationForm, LoginForm, ProfileEditor, AvatarUpload, SocialLogin, SocialAccountManager)
+- **Models**: 11 (User, Profile, Avatar, SocialAccount, TwoFactorAuthentication, AuditLog, Country, State, City, County, SubCounty)
+- **Livewire Components**: 7 (RegistrationForm, LoginForm, ProfileEditor, AvatarUpload, SocialLogin, SocialAccountManager, TwoFactorAuthentication)
 - **Console Commands**: 1 (CreateRole)
-- **Services**: 3 (EmailService, AvatarUploadService, SocialAuthService)
-- **Controllers**: Multiple auth controllers including SocialAuthController
+- **Services**: 6 (EmailService, AvatarUploadService, SocialAuthService, TwoFactorService, RateLimitingService, AuditService)
+- **Controllers**: Multiple auth controllers including SocialAuthController, TwoFactorController
 - **Database Seeders**: 11 (including 5 chunks for cities data + ProfileSeeder + SocialAccountSeeder)
-- **Migration Files**: 12 (including profiles, avatars, and social accounts tables)
+- **Migration Files**: 14 (including profiles, avatars, social accounts, two-factor auth, audit logs tables)
+- **Middleware**: 6 (LogUserActivity, RateLimitAuth, RateLimitApi, RateLimitProfile, TwoFactorChallenge)
+- **Notifications**: 3 (TwoFactorEnabled, TwoFactorDisabled, RecoveryCodeUsed)
+
+## 📚 Documentation Files
+
+- `docs/API.md` - Complete REST API documentation with endpoints, examples, and SDK implementations
+- `docs/DEVELOPER.md` - Comprehensive developer setup guide with IDE configuration and best practices
+- `docs/DEPLOYMENT.md` - Production deployment guide with multiple strategies and security hardening
+- `docs/IMPROVEMENTS.md` - Summary of all security enhancements and new features
 
 ## 🔍 Key Features Deep Dive
 
@@ -1033,7 +1588,7 @@ The `SocialAuthService` handles:
 ### Security Features
 - Role-based access control using Spatie Laravel Permission
 - Super admin override capability
-- Email verification for member roles
+- Email verification for secure account access
 - Password strength validation
 - CSRF protection
 - Bcrypt password hashing
@@ -1042,6 +1597,60 @@ The `SocialAuthService` handles:
 - OAuth token security and management
 - Social account conflict prevention
 - Session security and rate limiting
+- **Two-Factor Authentication** - TOTP support with recovery codes
+- **Granular Rate Limiting** - Endpoint-specific rate limiting with IP blacklisting
+- **User Activity Audit Logging** - Comprehensive security monitoring and compliance
+- **Suspicious Activity Detection** - AI-driven anomaly detection and alerting
+- **Security Event Tracking** - Real-time monitoring of security events
+- **IP Blacklisting** - Automatic blocking of malicious IP addresses
+- **Advanced Threat Protection** - Multi-layered security architecture
+
+### Enterprise Security Features
+- **Multi-Factor Authentication** - TOTP with QR code setup and recovery codes
+- **Advanced Rate Limiting** - Configurable limits per endpoint with Redis caching
+- **Comprehensive Audit Trails** - Complete user activity logging for compliance
+- **Anomaly Detection** - Automatic detection of suspicious patterns and behaviors
+- **Security Analytics** - Real-time statistics and security monitoring
+- **Compliance Support** - GDPR-compliant data handling and export capabilities
+- **Performance Optimized** - Efficient caching and database indexing for security systems
+
+---
+
+## 🚀 Quick Security Setup
+
+### Enable Two-Factor Authentication
+```bash
+# Install required packages
+composer update
+
+# Run migrations
+php artisan migrate
+
+# Add middleware to app/Http/Kernel.php
+'2fa.challenge' => \App\Http\Middleware\TwoFactorChallenge::class,
+```
+
+### Configure Rate Limiting
+```bash
+# Add rate limiting middleware
+'rate.limit.auth' => \App\Http\Middleware\RateLimitAuth::class,
+'rate.limit.api' => \App\Http\Middleware\RateLimitApi::class,
+'rate.limit.profile' => \App\Http\Middleware\RateLimitProfile::class,
+```
+
+### Enable Audit Logging
+```bash
+# Add activity logging middleware
+\App\Http\Middleware\LogUserActivity::class,
+```
+
+### Security Best Practices
+1. **Enable 2FA** on all admin accounts
+2. **Monitor audit logs** regularly for suspicious activity
+3. **Configure rate limits** appropriately for your use case
+4. **Set up alerts** for security events
+5. **Regular cleanup** of old audit logs (90 days default)
+6. **Review security statistics** and analytics weekly
 
 ---
 

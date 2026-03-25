@@ -4,7 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,10 +13,10 @@ use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class User extends Authenticatable implements MustVerifyEmail, CanResetPassword
+class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordContract
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, CanResetPassword;
+    use HasFactory, Notifiable, HasRoles, CanResetPasswordTrait;
 
     /**
      * The attributes that are mass assignable.
@@ -67,6 +68,14 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPassword
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
+    }
+
+    /**
+     * Get the user's two factor authentication.
+     */
+    public function twoFactorAuthentication(): HasOne
+    {
+        return $this->hasOne(TwoFactorAuthentication::class);
     }
 
     /**
@@ -236,5 +245,67 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPassword
         $user->getOrCreateProfile();
 
         return $user;
+    }
+
+    /**
+     * Check if user has two factor authentication enabled.
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->twoFactorAuthentication && $this->twoFactorAuthentication->enabled;
+    }
+
+    /**
+     * Get or create two factor authentication record.
+     */
+    public function getOrCreateTwoFactor(): TwoFactorAuthentication
+    {
+        if (!$this->twoFactorAuthentication) {
+            $this->twoFactorAuthentication = TwoFactorAuthentication::create(['user_id' => $this->id]);
+        }
+
+        return $this->twoFactorAuthentication;
+    }
+
+    /**
+     * Enable two factor authentication.
+     */
+    public function enableTwoFactor(): void
+    {
+        $twoFactor = $this->getOrCreateTwoFactor();
+        $twoFactor->enable();
+    }
+
+    /**
+     * Disable two factor authentication.
+     */
+    public function disableTwoFactor(): void
+    {
+        if ($this->twoFactorAuthentication) {
+            $this->twoFactorAuthentication->disable();
+        }
+    }
+
+    /**
+     * Verify two factor authentication code.
+     */
+    public function verifyTwoFactorCode(string $code): bool
+    {
+        if (!$this->hasTwoFactorEnabled()) {
+            return false;
+        }
+
+        return $this->twoFactorAuthentication->verifyCode($code) || 
+               $this->twoFactorAuthentication->verifyRecoveryCode($code);
+    }
+
+    /**
+     * Check if user needs to complete two factor authentication setup.
+     */
+    public function needsTwoFactorSetup(): bool
+    {
+        return $this->twoFactorAuthentication && 
+               $this->twoFactorAuthentication->secret_key && 
+               !$this->twoFactorAuthentication->enabled;
     }
 }

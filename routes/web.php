@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 
 // Controllers
 use App\Http\Controllers\Auth\CentralAuthController;
+use App\Http\Controllers\TwoFactorController;
 
 
 /*
@@ -36,6 +37,22 @@ Route::middleware('guest')->group(function () {
 
 // Logout (Authenticated only)
 Route::middleware('auth')->post('logout', [CentralAuthController::class, 'logout'])->name('central.logout');
+
+/*
+|--------------------------------------------------------------------------
+| Two-Factor Authentication Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'throttle:5,1'])->group(function () {
+    Route::controller(TwoFactorController::class)->group(function () {
+        Route::get('/2fa/challenge', 'showChallenge')->name('2fa.challenge');
+        Route::post('/2fa/verify', 'verify')->name('2fa.verify');
+        Route::get('/2fa/recovery', 'showRecoveryForm')->name('2fa.recovery');
+        Route::post('/2fa/recovery/verify', 'verifyRecovery')->name('2fa.recovery.verify');
+        Route::post('/2fa/logout', 'logout')->name('2fa.logout');
+    });
+});
 
 /*
 |--------------------------------------------------------------------------
